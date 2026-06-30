@@ -1,0 +1,15 @@
+<div class="rounded-xl border border-slate-800 bg-slate-900/50 p-5 transition hover:border-slate-700">
+    <div class="text-xs font-medium uppercase tracking-wide text-slate-500">@Label</div>
+    <div class="mt-1 text-2xl font-bold @ValueClass">@Value</div>
+    @if (!string.IsNullOrWhiteSpace(Hint))
+    {
+        <div class="mt-1 text-xs text-slate-400">@Hint</div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Value { get; set; } = string.Empty;
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public string ValueClass { get; set; } = "text-white";
+}

@@ -1,0 +1,99 @@
+@page "/feedback"
+@implements IDisposable
+@inject PlanState PlanState
+
+<PageTitle>PaceMind — Feedback</PageTitle>
+
+<div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight">How did it go?</h1>
+    <p class="mt-1 text-slate-400">Your honest take reshapes the weeks ahead.</p>
+</div>
+
+@{
+    var session = PlanState.Plan?.Weeks
+        .FirstOrDefault()?.Workouts
+        .FirstOrDefault(w => w.DurationMinutes is not null);
+}
+
+<div class="grid gap-6 lg:grid-cols-3">
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 lg:col-span-2">
+        @if (session is not null)
+        {
+            <div class="mb-5 flex items-center justify-between border-b border-slate-800 pb-4">
+                <div>
+                    <div class="text-xs uppercase tracking-wide text-slate-500">@session.DayOfWeek</div>
+                    <div class="text-lg font-semibold">@session.Description</div>
+                </div>
+                <div class="rounded-full bg-brand-500/15 px-3 py-1 text-sm text-brand-300">@session.IntensityZone</div>
+            </div>
+        }
+        else
+        {
+            <p class="mb-5 text-sm text-slate-400">No session loaded — generate a plan first to log feedback.</p>
+        }
+
+        <div class="text-sm text-slate-300">How did it feel?</div>
+        <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            @foreach (var option in Difficulties)
+            {
+                <button type="button" @onclick="() => Select(option.Label)"
+                        class="rounded-xl border px-3 py-4 text-center transition @(_selected == option.Label
+                            ? "border-brand-500 bg-brand-500/15"
+                            : "border-slate-700 hover:border-slate-600")">
+                    <div class="text-2xl">@option.Emoji</div>
+                    <div class="mt-1 text-sm">@option.Label</div>
+                </button>
+            }
+        </div>
+
+        <div class="mt-5">
+            <label class="mb-1.5 block text-sm text-slate-300">Note (optional)</label>
+            <textarea rows="2" @bind="_note" placeholder="Legs felt heavy on the last rep…"
+                      class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand-500"></textarea>
+        </div>
+
+        <button @onclick="Submit" disabled="@(_selected is null)"
+                class="mt-5 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400 disabled:opacity-50">
+            Submit feedback
+        </button>
+
+        @if (_submitted)
+        {
+            <div class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                Saved locally. The weekly adapter that rewrites your plan from this signal is coming next.
+            </div>
+        }
+    </div>
+
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+        <h3 class="font-semibold">Why it matters</h3>
+        <p class="mt-3 text-sm text-slate-400">
+            PaceMind reads two signals: how you felt and (soon) your uploaded activity data.
+            Consistent "too hard" eases the load; "easy" adds a little. Miss sessions and it reshuffles —
+            and flags your goal if it's at risk.
+        </p>
+    </div>
+</div>
+
+@code {
+    private static readonly (string Label, string Emoji)[] Difficulties =
+    [
+        ("Easy", "😌"), ("Just right", "👌"), ("Too hard", "🥵"), ("Pain", "🤕"),
+    ];
+
+    private string? _selected;
+    private string _note = string.Empty;
+    private bool _submitted;
+
+    protected override void OnInitialized() => PlanState.Changed += StateHasChanged;
+
+    private void Select(string label)
+    {
+        _selected = label;
+        _submitted = false;
+    }
+
+    private void Submit() => _submitted = _selected is not null;
+
+    public void Dispose() => PlanState.Changed -= StateHasChanged;
+}

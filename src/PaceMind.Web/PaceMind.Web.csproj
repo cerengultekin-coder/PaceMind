@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.8" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PaceMind.Contracts\PaceMind.Contracts.csproj" />
+  </ItemGroup>
+
+  <!-- Generate the Tailwind stylesheet before the app compiles. -->
+  <Target Name="BuildTailwindCss" BeforeTargets="Compile">
+    <Exec Command="npm install" Condition="!Exists('node_modules')" />
+    <Exec Command="npm run build:css" />
+  </Target>
+
+</Project>

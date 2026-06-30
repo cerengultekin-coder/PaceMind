@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PaceMind.Api/PaceMind.Api.csproj" />
+    <Project Path="src/PaceMind.Application/PaceMind.Application.csproj" />
+    <Project Path="src/PaceMind.Contracts/PaceMind.Contracts.csproj" />
+    <Project Path="src/PaceMind.Domain/PaceMind.Domain.csproj" />
+    <Project Path="src/PaceMind.Infrastructure/PaceMind.Infrastructure.csproj" />
+    <Project Path="src/PaceMind.Web/PaceMind.Web.csproj" />
+  </Folder>
+</Solution>
