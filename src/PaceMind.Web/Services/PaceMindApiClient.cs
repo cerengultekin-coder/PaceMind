@@ -17,14 +17,27 @@ public sealed class PaceMindApiClient(HttpClient httpClient)
     public async Task<PlanPreviewResponse> PreviewPlanAsync(PlanPreviewRequest request, CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.PostAsJsonAsync("api/plan/preview", request, JsonOptions, cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new ApiException(string.IsNullOrWhiteSpace(detail) ? "The plan could not be generated." : detail);
-        }
+        await EnsureSuccess(response, "The plan could not be generated.", cancellationToken);
 
         return await response.Content.ReadFromJsonAsync<PlanPreviewResponse>(JsonOptions, cancellationToken)
                ?? throw new ApiException("The API returned an empty plan.");
+    }
+
+    public async Task<PlanAdaptResponse> AdaptPlanAsync(PlanAdaptRequest request, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PostAsJsonAsync("api/plan/adapt", request, JsonOptions, cancellationToken);
+        await EnsureSuccess(response, "The plan could not be adapted.", cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<PlanAdaptResponse>(JsonOptions, cancellationToken)
+               ?? throw new ApiException("The API returned an empty response.");
+    }
+
+    private static async Task EnsureSuccess(HttpResponseMessage response, string fallback, CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var detail = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new ApiException(string.IsNullOrWhiteSpace(detail) ? fallback : detail);
     }
 }

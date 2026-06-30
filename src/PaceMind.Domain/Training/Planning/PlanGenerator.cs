@@ -10,9 +10,6 @@ namespace PaceMind.Domain.Training.Planning;
 /// </summary>
 public sealed class PlanGenerator(ISportProfileResolver profileResolver) : IPlanGenerator
 {
-    private const int MinSessionMinutes = 20;
-    private const int DurationRoundingMinutes = 5;
-
     public TrainingPlan Generate(Goal goal, DateOnly startDate, PlanGenerationOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(goal);
@@ -87,7 +84,7 @@ public sealed class PlanGenerator(ISportProfileResolver profileResolver) : IPlan
         ISportProfile profile)
     {
         var sessionLoad = weeklyLoad.Value * (WeeklySessionTemplate.LoadWeight(type) / totalWeight);
-        var minutes = RoundDuration(sessionLoad / profile.GetIntensityZone(type).IntensityFactor());
+        var minutes = SessionDuration.Round(sessionLoad / profile.GetIntensityZone(type).IntensityFactor());
 
         return new Workout
         {
@@ -97,7 +94,7 @@ public sealed class PlanGenerator(ISportProfileResolver profileResolver) : IPlan
             DayOfWeek = date.DayOfWeek,
             Type = type,
             TargetDurationMinutes = minutes,
-            Description = $"{minutes}-minute {Label(type)} session",
+            Description = WorkoutNarrative.Describe(type, minutes),
             Status = WorkoutStatus.Planned,
         };
     }
@@ -121,19 +118,4 @@ public sealed class PlanGenerator(ISportProfileResolver profileResolver) : IPlan
 
         return (int)Math.Ceiling(days / 7.0);
     }
-
-    private static int RoundDuration(double rawMinutes)
-    {
-        var rounded = (int)Math.Round(rawMinutes / DurationRoundingMinutes) * DurationRoundingMinutes;
-        return Math.Max(MinSessionMinutes, rounded);
-    }
-
-    private static string Label(WorkoutType type) => type switch
-    {
-        WorkoutType.Easy => "easy",
-        WorkoutType.Tempo => "tempo",
-        WorkoutType.Interval => "interval",
-        WorkoutType.Long => "long",
-        _ => type.ToString().ToLowerInvariant(),
-    };
 }

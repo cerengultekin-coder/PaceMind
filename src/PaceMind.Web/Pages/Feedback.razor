@@ -1,99 +1,170 @@
 @page "/feedback"
 @implements IDisposable
+@inject PaceMindApiClient Api
 @inject PlanState PlanState
+@inject NavigationManager Navigation
 
 <PageTitle>PaceMind — Feedback</PageTitle>
 
 <div class="mb-6">
-    <h1 class="text-2xl font-bold tracking-tight">How did it go?</h1>
-    <p class="mt-1 text-slate-400">Your honest take reshapes the weeks ahead.</p>
+    <h1 class="text-2xl font-bold tracking-tight">How did week 1 go?</h1>
+    <p class="mt-1 text-slate-400">Rate each session — your honest take rewrites the next week.</p>
 </div>
 
-@{
-    var session = PlanState.Plan?.Weeks
-        .FirstOrDefault()?.Workouts
-        .FirstOrDefault(w => w.DurationMinutes is not null);
-}
+@if (PlanState is { HasPlan: true, Plan: { } plan })
+{
+    var sessions = plan.Weeks.FirstOrDefault()?.Workouts.Where(w => w.DurationMinutes is not null).ToList() ?? [];
 
-<div class="grid gap-6 lg:grid-cols-3">
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 lg:col-span-2">
-        @if (session is not null)
-        {
-            <div class="mb-5 flex items-center justify-between border-b border-slate-800 pb-4">
-                <div>
-                    <div class="text-xs uppercase tracking-wide text-slate-500">@session.DayOfWeek</div>
-                    <div class="text-lg font-semibold">@session.Description</div>
-                </div>
-                <div class="rounded-full bg-brand-500/15 px-3 py-1 text-sm text-brand-300">@session.IntensityZone</div>
-            </div>
-        }
-        else
-        {
-            <p class="mb-5 text-sm text-slate-400">No session loaded — generate a plan first to log feedback.</p>
-        }
-
-        <div class="text-sm text-slate-300">How did it feel?</div>
-        <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            @foreach (var option in Difficulties)
+    <div class="grid gap-6 lg:grid-cols-3">
+        <div class="space-y-3 lg:col-span-2">
+            @foreach (var session in sessions)
             {
-                <button type="button" @onclick="() => Select(option.Label)"
-                        class="rounded-xl border px-3 py-4 text-center transition @(_selected == option.Label
-                            ? "border-brand-500 bg-brand-500/15"
-                            : "border-slate-700 hover:border-slate-600")">
-                    <div class="text-2xl">@option.Emoji</div>
-                    <div class="mt-1 text-sm">@option.Label</div>
-                </button>
+                <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                    <div class="mb-3 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs uppercase tracking-wide text-slate-500">@session.DayOfWeek.ToString()[..3]</span>
+                            <span class="ml-2 text-sm font-semibold">@session.Description</span>
+                        </div>
+                        <span class="rounded-full bg-brand-500/15 px-2.5 py-0.5 text-xs text-brand-300">@session.IntensityZone</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var option in Options)
+                        {
+                            var selected = _selections.GetValueOrDefault(session.DayOfWeek) == option;
+                            <button type="button" @onclick="() => Select(session.DayOfWeek, option)"
+                                    class="rounded-lg border px-3 py-1.5 text-sm transition @(selected
+                                        ? "border-brand-500 bg-brand-500/15 text-brand-200"
+                                        : "border-slate-700 text-slate-300 hover:border-slate-600")">
+                                @option
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (_error is not null)
+            {
+                <div class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">@_error</div>
+            }
+
+            <button @onclick="SubmitAsync" disabled="@(_busy || _selections.Count == 0)"
+                    class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400 disabled:opacity-50">
+                @if (_busy)
+                {
+                    <span class="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/40 border-t-slate-950"></span>
+                    <span>Adapting…</span>
+                }
+                else
+                {
+                    <span>Submit & adapt next week →</span>
+                }
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            @if (_result is not null)
+            {
+                <div class="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-6">
+                    <div class="text-xs font-medium uppercase tracking-wide text-brand-300">Plan adapted</div>
+                    <div class="mt-2 text-lg font-semibold">@_result.Summary</div>
+                    <p class="mt-1 text-sm text-slate-300">@_result.TriggerReason.</p>
+                    <div class="mt-4 text-sm text-slate-400">
+                        Completed @_result.Completed of @_result.PlannedSessions sessions
+                        @if (_result.Skipped > 0)
+                        {
+                            <text>· @_result.Skipped skipped</text>
+                        }
+                    </div>
+                    @if (_result.GoalAtRisk)
+                    {
+                        <div class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+                            ⚠ Your goal may be at risk — consider adding a day or moving the date.
+                        </div>
+                    }
+                    <a href="plan" class="mt-5 inline-block rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-brand-400">
+                        View updated plan →
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+                    <h3 class="font-semibold">Why it matters</h3>
+                    <p class="mt-3 text-sm text-slate-400">
+                        Consistent "too hard" eases the load; "easy" adds a little (capped at +10%/week).
+                        Miss sessions and it eases off and flags your goal. Every change is bounded by safe
+                        coaching rules — and logged so you can see why.
+                    </p>
+                </div>
             }
         </div>
-
-        <div class="mt-5">
-            <label class="mb-1.5 block text-sm text-slate-300">Note (optional)</label>
-            <textarea rows="2" @bind="_note" placeholder="Legs felt heavy on the last rep…"
-                      class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-brand-500"></textarea>
-        </div>
-
-        <button @onclick="Submit" disabled="@(_selected is null)"
-                class="mt-5 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400 disabled:opacity-50">
-            Submit feedback
+    </div>
+}
+else
+{
+    <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-20 text-center">
+        <div class="text-3xl">✅</div>
+        <h2 class="mt-3 text-lg font-semibold">No plan to log against</h2>
+        <p class="mt-1 max-w-sm text-sm text-slate-400">Generate a plan first, then come back to log how your sessions felt.</p>
+        <button @onclick="@(() => Navigation.NavigateTo("onboarding"))"
+                class="mt-6 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400">
+            Set your goal →
         </button>
-
-        @if (_submitted)
-        {
-            <div class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-                Saved locally. The weekly adapter that rewrites your plan from this signal is coming next.
-            </div>
-        }
     </div>
-
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
-        <h3 class="font-semibold">Why it matters</h3>
-        <p class="mt-3 text-sm text-slate-400">
-            PaceMind reads two signals: how you felt and (soon) your uploaded activity data.
-            Consistent "too hard" eases the load; "easy" adds a little. Miss sessions and it reshuffles —
-            and flags your goal if it's at risk.
-        </p>
-    </div>
-</div>
+}
 
 @code {
-    private static readonly (string Label, string Emoji)[] Difficulties =
-    [
-        ("Easy", "😌"), ("Just right", "👌"), ("Too hard", "🥵"), ("Pain", "🤕"),
-    ];
+    private static readonly string[] Options = ["Easy", "Just right", "Too hard", "Pain", "Skip"];
 
-    private string? _selected;
-    private string _note = string.Empty;
-    private bool _submitted;
+    private readonly Dictionary<DayOfWeek, string> _selections = [];
+    private AdaptationSummaryDto? _result;
+    private bool _busy;
+    private string? _error;
 
     protected override void OnInitialized() => PlanState.Changed += StateHasChanged;
 
-    private void Select(string label)
+    private void Select(DayOfWeek day, string option)
     {
-        _selected = label;
-        _submitted = false;
+        _selections[day] = option;
+        _result = null;
     }
 
-    private void Submit() => _submitted = _selected is not null;
+    private async Task SubmitAsync()
+    {
+        if (PlanState is not { LastRequest: { } request, Plan: { } plan })
+            return;
+
+        _busy = true;
+        _error = null;
+
+        var feedback = _selections.Select(entry => entry.Value == "Skip"
+            ? new SessionFeedbackInput(entry.Key, FeedbackOutcome.Skipped, SkipReason: SkipReason.Other)
+            : new SessionFeedbackInput(entry.Key, FeedbackOutcome.Completed, MapDifficulty(entry.Value))).ToList();
+
+        try
+        {
+            var response = await Api.AdaptPlanAsync(new PlanAdaptRequest(request, plan.StartDate, feedback));
+            PlanState.Set(request, response.Plan);
+            _result = response.Adaptation;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static Difficulty MapDifficulty(string option) => option switch
+    {
+        "Easy" => Difficulty.Easy,
+        "Just right" => Difficulty.JustRight,
+        "Too hard" => Difficulty.TooHard,
+        "Pain" => Difficulty.Pain,
+        _ => Difficulty.JustRight,
+    };
 
     public void Dispose() => PlanState.Changed -= StateHasChanged;
 }
