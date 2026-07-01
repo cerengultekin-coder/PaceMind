@@ -20,7 +20,7 @@
     <StatCard Label="Sessions logged" Value="@ActivityLog.Entries.Count.ToString()" />
     <StatCard Label="This week" Value="@ThisWeekCount().ToString()" ValueClass="text-brand-300" />
     <StatCard Label="Goal" Value="@GoalValue()" Hint="@GoalHint()" />
-    <StatCard Label="Program" Value="@(PlanState.HasPlan ? $"{PlanState.Plan!.TotalWeeks} wk" : "—")" />
+    <StatCard Label="Program" Value="@(PlanState.HasProgram ? $"Wk {PlanState.CurrentWeek!.WeekNumber}/{PlanState.TotalWeeks}" : "—")" />
 </div>
 
 <div class="mt-6">
@@ -68,9 +68,9 @@
         return ActivityLog.Entries.Count(entry => entry.LoggedAt >= since);
     }
 
-    private string GoalValue() => PlanState.LastRequest is { } r ? $"{r.TargetDistanceKm:0.#}K" : "—";
+    private string GoalValue() => PlanState.Goal is { } r ? $"{r.TargetDistanceKm:0.#}K" : "—";
 
-    private string? GoalHint() => PlanState.LastRequest is { } r ? $"{r.TargetTimeMinutes} min · {r.TargetDate:dd MMM}" : null;
+    private string? GoalHint() => PlanState.Goal is { } r ? $"{r.TargetTimeMinutes} min · {r.TargetDate:dd MMM}" : null;
 
     private static string FeelingClass(string feeling) => feeling switch
     {

@@ -30,6 +30,15 @@ public sealed class PaceMindApiClient(HttpClient httpClient)
                ?? throw new ApiException("The API returned an empty response.");
     }
 
+    public async Task<PlanWeekResponse> GetWeekAsync(PlanWeekRequest request, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PostAsJsonAsync("api/plan/week", request, JsonOptions, cancellationToken);
+        await EnsureSuccess(response, "The week could not be generated.", cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<PlanWeekResponse>(JsonOptions, cancellationToken)
+               ?? throw new ApiException("The API returned an empty week.");
+    }
+
     public async Task<CoachReplyResponse> CommentOnWeekAsync(CoachCommentRequest request, CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.PostAsJsonAsync("api/coach/comment", request, JsonOptions, cancellationToken);

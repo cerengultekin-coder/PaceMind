@@ -83,7 +83,7 @@
 
     private string GoalSummary()
     {
-        var request = PlanState.LastRequest;
+        var request = PlanState.Goal;
         if (request is null)
             return "general endurance fitness (no plan set yet)";
 

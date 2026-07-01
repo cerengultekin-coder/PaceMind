@@ -2,12 +2,13 @@
 @implements IDisposable
 @inject PaceMindApiClient Api
 @inject PlanState PlanState
+@inject ActivityLog ActivityLog
 
 <PageTitle>PaceMind — Program</PageTitle>
 
 <div class="mb-6">
     <h1 class="text-2xl font-bold tracking-tight">Your program</h1>
-    <p class="mt-1 text-slate-400">Set a goal and we'll build a periodized weekly plan you can follow and adapt.</p>
+    <p class="mt-1 text-slate-400">One week at a time. Finish the week, log how it went, then start the next — it adapts to you.</p>
 </div>
 
 <div class="grid gap-6 lg:grid-cols-3">
@@ -60,44 +61,100 @@
             @if (_busy)
             {
                 <span class="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/40 border-t-slate-950"></span>
-                <span>Generating…</span>
+                <span>Working…</span>
             }
             else
             {
-                <span>Generate program</span>
+                <span>@(PlanState.HasProgram ? "Restart from week 1" : "Generate week 1")</span>
             }
         </button>
     </div>
 
     <div class="lg:col-span-2">
-        @if (PlanState is { HasPlan: true, Plan: { } plan })
+        @if (PlanState is { HasProgram: true, CurrentWeek: { } week, Goal: not null })
         {
-            var peak = plan.Weeks.Count == 0 ? 0d : plan.Weeks.Max(week => week.TotalLoad);
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="text-sm font-medium text-brand-300">Week @week.WeekNumber of @PlanState.TotalWeeks</div>
+                        <div class="mt-0.5 text-xs text-slate-500">Week of @week.StartDate.ToString("dd MMM yyyy") · load @week.TotalLoad</div>
+                    </div>
+                    @if (week.WeekNumber >= PlanState.TotalWeeks)
+                    {
+                        <span class="rounded-full bg-emerald-500/15 px-3 py-1 text-xs text-emerald-300">final week</span>
+                    }
+                </div>
 
-            <div class="mb-4 grid grid-cols-3 gap-3">
-                <StatCard Label="Weeks" Value="@plan.TotalWeeks.ToString()" />
-                <StatCard Label="Peak load" Value="@peak.ToString()" ValueClass="text-brand-300" />
-                <StatCard Label="Goal date" Value="@plan.TargetDate.ToString("dd MMM")" Hint="@plan.TargetDate.ToString("yyyy")" />
-            </div>
-
-            <div class="space-y-2">
-                @for (var i = 0; i < plan.Weeks.Count; i++)
+                @if (_adaptationNote is not null)
                 {
-                    var index = i;
-                    <WeekRow Week="plan.Weeks[index]"
-                             Sport="@plan.Sport.ToString()"
-                             GoalSummary="@GoalSummary()"
-                             MaxLoad="peak"
-                             IsOpen="_openIndex == index"
-                             OnToggle="() => Toggle(index)" />
+                    <div class="mt-4 rounded-lg border border-brand-500/30 bg-brand-500/10 p-3 text-sm text-slate-200">
+                        @_adaptationNote
+                        @if (_goalAtRisk)
+                        {
+                            <div class="mt-1 text-amber-300">Your goal may be at risk — consider adding a day or moving the date.</div>
+                        }
+                    </div>
                 }
+
+                <div class="mt-5 space-y-2">
+                    @foreach (var workout in week.Workouts.Where(w => w.DurationMinutes is not null))
+                    {
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-slate-800 bg-slate-950 p-3">
+                            <span class="w-10 text-xs uppercase text-slate-500">@workout.DayOfWeek.ToString()[..3]</span>
+                            <span class="@TypeColor(workout.Type)">@workout.Type</span>
+                            <span class="text-xs text-slate-400">@workout.DurationMinutes min</span>
+
+                            @if (_feelings.TryGetValue(workout.Date, out var feeling))
+                            {
+                                <span class="ml-auto text-xs text-emerald-300">logged · @feeling</span>
+                            }
+                            else
+                            {
+                                <div class="ml-auto flex flex-wrap gap-1">
+                                    @foreach (var option in Feelings)
+                                    {
+                                        <button type="button" @onclick="() => Log(workout, option.Feeling)"
+                                                class="rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-300 transition hover:border-brand-500 hover:text-brand-200">
+                                            @option.Label
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="mt-6 border-t border-slate-800 pt-5">
+                    @if (week.WeekNumber < PlanState.TotalWeeks)
+                    {
+                        <div class="flex items-center gap-3">
+                            <button @onclick="AdvanceAsync" disabled="@_busy"
+                                    class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400 disabled:opacity-60">
+                                @if (_busy)
+                                {
+                                    <span class="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/40 border-t-slate-950"></span>
+                                    <span>Building next week…</span>
+                                }
+                                else
+                                {
+                                    <span>Finish week &amp; start week @(week.WeekNumber + 1)</span>
+                                }
+                            </button>
+                            <span class="text-xs text-slate-500">@_feelings.Count logged</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-sm text-emerald-300">This is your final week — finish strong. Good luck on your goal!</div>
+                    }
+                </div>
             </div>
         }
         else
         {
             <div class="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-20 text-center">
                 <h2 class="text-lg font-semibold">No program yet</h2>
-                <p class="mt-1 max-w-sm text-sm text-slate-400">Fill in your goal and generate a plan. Weeks appear here; open one to see the sessions and log how they went.</p>
+                <p class="mt-1 max-w-sm text-sm text-slate-400">Fill in your goal and generate week 1. You'll get just this week's sessions; finish it, then start the next.</p>
             </div>
         }
     </div>
@@ -110,13 +167,24 @@
         DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday,
     ];
 
+    private static readonly (string Label, string Feeling)[] Feelings =
+    [
+        ("Easy", "Easy"),
+        ("OK", "Just right"),
+        ("Hard", "Too hard"),
+        ("Pain", "Pain"),
+        ("Skip", "Skipped"),
+    ];
+
     private const string FieldClass =
         "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-brand-500";
 
     private readonly FormModel _form = new();
-    private int _openIndex;
+    private readonly Dictionary<DateOnly, string> _feelings = [];
     private bool _busy;
     private string? _error;
+    private string? _adaptationNote;
+    private bool _goalAtRisk;
 
     protected override void OnInitialized() => PlanState.Changed += StateHasChanged;
 
@@ -126,26 +194,27 @@
             _form.BlackoutDays.Add(day);
     }
 
-    private void Toggle(int index) => _openIndex = _openIndex == index ? -1 : index;
+    private PlanPreviewRequest BuildGoal() => new(
+        _form.TargetDistanceKm,
+        _form.TargetTimeMinutes,
+        DateOnly.FromDateTime(_form.TargetDate),
+        _form.DaysPerWeekMax,
+        [.. _form.BlackoutDays],
+        _form.BaselineNote);
 
     private async Task GenerateAsync()
     {
         _busy = true;
         _error = null;
-
-        var request = new PlanPreviewRequest(
-            _form.TargetDistanceKm,
-            _form.TargetTimeMinutes,
-            DateOnly.FromDateTime(_form.TargetDate),
-            _form.DaysPerWeekMax,
-            [.. _form.BlackoutDays],
-            _form.BaselineNote);
+        _adaptationNote = null;
+        _goalAtRisk = false;
 
         try
         {
-            var plan = await Api.PreviewPlanAsync(request);
-            PlanState.Set(request, plan);
-            _openIndex = 0;
+            var goal = BuildGoal();
+            var response = await Api.GetWeekAsync(new PlanWeekRequest(goal, 1));
+            _feelings.Clear();
+            PlanState.SetWeek(goal, response.StartDate, response.TotalWeeks, response.Week);
         }
         catch (ApiException ex)
         {
@@ -157,8 +226,63 @@
         }
     }
 
-    private string GoalSummary() =>
-        $"{_form.TargetDistanceKm:0.#}K in {_form.TargetTimeMinutes} minutes by {DateOnly.FromDateTime(_form.TargetDate):dd MMM yyyy}";
+    private async Task AdvanceAsync()
+    {
+        if (PlanState is not { CurrentWeek: { } week, Goal: { } goal })
+            return;
+
+        _busy = true;
+        _error = null;
+
+        var feedback = week.Workouts
+            .Where(w => w.DurationMinutes is not null && _feelings.ContainsKey(w.Date))
+            .Select(w => ToFeedback(w.DayOfWeek, _feelings[w.Date]))
+            .ToList();
+
+        try
+        {
+            var response = await Api.GetWeekAsync(
+                new PlanWeekRequest(goal, week.WeekNumber + 1, PlanState.StartDate, feedback));
+            _feelings.Clear();
+            _adaptationNote = response.AdaptationSummary;
+            _goalAtRisk = response.GoalAtRisk;
+            PlanState.SetWeek(goal, response.StartDate, response.TotalWeeks, response.Week);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Log(PlanWorkoutDto workout, string feeling)
+    {
+        _feelings[workout.Date] = feeling;
+        ActivityLog.Add(new ActivityEntry(
+            DateTimeOffset.Now, PlanState.Goal?.Sport.ToString() ?? "Running",
+            workout.DayOfWeek, workout.Type, workout.DurationMinutes, feeling));
+    }
+
+    private static SessionFeedbackInput ToFeedback(DayOfWeek day, string feeling) => feeling switch
+    {
+        "Easy" => new(day, FeedbackOutcome.Completed, Difficulty.Easy),
+        "Just right" => new(day, FeedbackOutcome.Completed, Difficulty.JustRight),
+        "Too hard" => new(day, FeedbackOutcome.Completed, Difficulty.TooHard),
+        "Pain" => new(day, FeedbackOutcome.Completed, Difficulty.Pain),
+        _ => new(day, FeedbackOutcome.Skipped, SkipReason: SkipReason.Other),
+    };
+
+    private static string TypeColor(string type) => type switch
+    {
+        "Easy" => "text-easy",
+        "Long" => "text-long",
+        "Tempo" => "text-tempo",
+        "Interval" => "text-interval",
+        _ => "text-slate-400",
+    };
 
     public void Dispose() => PlanState.Changed -= StateHasChanged;
 

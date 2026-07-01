@@ -17,7 +17,7 @@ internal static class PlanPreviewMapper
         return new PlanPreviewResponse(goal.Sport, startDate, goal.TargetDate, weeks.Count, weeks);
     }
 
-    private static PlanWeekDto ToWeek(TrainingWeek week, ISportProfile profile)
+    internal static PlanWeekDto ToWeek(TrainingWeek week, ISportProfile profile)
     {
         var workouts = week.Workouts
             .OrderBy(workout => workout.ScheduledDate)

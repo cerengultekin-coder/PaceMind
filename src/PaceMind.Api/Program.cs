@@ -127,6 +127,48 @@ app.MapPost("/api/coach/chat", async (CoachChatRequest request, ICoachService co
 })
 .WithName("CoachChat");
 
+app.MapPost("/api/plan/week", (
+    PlanWeekRequest request,
+    IPlanGenerator planGenerator,
+    IWeekAdapter weekAdapter,
+    ISportProfileResolver profileResolver) =>
+{
+    if (!profileResolver.Supports(request.Goal.Sport))
+        return Results.BadRequest($"Sport '{request.Goal.Sport}' is not supported yet.");
+
+    var startDate = request.StartDate ?? NextMonday(DateOnly.FromDateTime(DateTime.UtcNow));
+    var goal = BuildGoal(request.Goal);
+
+    try
+    {
+        var plan = planGenerator.Generate(goal, startDate);
+        var weeks = plan.Weeks.OrderBy(week => week.WeekNumber).ToList();
+        var index = request.WeekNumber - 1;
+        if (index < 0 || index >= weeks.Count)
+            return Results.BadRequest("Requested week is outside the program.");
+
+        var profile = profileResolver.Resolve(goal.Sport);
+        string? adaptationSummary = null;
+        var goalAtRisk = false;
+
+        if (index > 0 && request.PreviousFeedback is { Count: > 0 } feedback)
+        {
+            ApplyFeedback(weeks[index - 1], feedback);
+            var result = weekAdapter.Adapt(weeks[index - 1], weeks[index], profile);
+            adaptationSummary = result.Log.Summary;
+            goalAtRisk = result.GoalAtRisk;
+        }
+
+        var week = PlanPreviewMapper.ToWeek(weeks[index], profile);
+        return Results.Ok(new PlanWeekResponse(week, weeks.Count, startDate, adaptationSummary, goalAtRisk));
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+})
+.WithName("PlanWeek");
+
 app.MapFallbackToFile("index.html");
 
 app.Run();
