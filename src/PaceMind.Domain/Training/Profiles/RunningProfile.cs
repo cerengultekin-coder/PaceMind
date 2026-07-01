@@ -2,7 +2,6 @@ using PaceMind.Domain.Enums;
 
 namespace PaceMind.Domain.Training.Profiles;
 
-/// <summary>Training-science profile for running, the first fully supported sport.</summary>
 public sealed class RunningProfile : ISportProfile
 {
     public Sport Sport => Sport.Running;

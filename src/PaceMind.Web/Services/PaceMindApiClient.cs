@@ -5,8 +5,6 @@ using PaceMind.Contracts;
 
 namespace PaceMind.Web.Services;
 
-/// <summary>Typed gateway to the PaceMind API. Keeps HTTP and serialization concerns
-/// out of the components.</summary>
 public sealed class PaceMindApiClient(HttpClient httpClient)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)

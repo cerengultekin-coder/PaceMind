@@ -4,7 +4,6 @@
     <div class="relative h-72 w-full cursor-pointer rounded-2xl transition-transform duration-500 [transform-style:preserve-3d] @(_flipped ? "[transform:rotateY(180deg)]" : "")"
          @onclick="Flip">
 
-        <!-- Front -->
         <div class="absolute inset-0 flex flex-col justify-between rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-900/40 p-6 [backface-visibility:hidden]">
             <div class="flex items-start justify-between">
                 <div class="text-xs font-medium uppercase tracking-wide text-slate-500">@Sport</div>
@@ -30,7 +29,6 @@
             </div>
         </div>
 
-        <!-- Back -->
         <div class="absolute inset-0 flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 [backface-visibility:hidden] [transform:rotateY(180deg)]">
             <div class="mb-2 flex items-center justify-between">
                 <div class="font-semibold">Week @Week.WeekNumber</div>

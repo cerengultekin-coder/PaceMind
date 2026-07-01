@@ -1,6 +1,5 @@
 namespace PaceMind.Contracts;
 
-/// <summary>The adapted plan plus a human-readable account of what changed and why.</summary>
 public sealed record PlanAdaptResponse(
     PlanPreviewResponse Plan,
     AdaptationSummaryDto Adaptation);

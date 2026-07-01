@@ -2,7 +2,6 @@ using PaceMind.Domain.Enums;
 
 namespace PaceMind.Contracts;
 
-/// <summary>A generated plan flattened for display, free of entity navigation cycles.</summary>
 public sealed record PlanPreviewResponse(
     Sport Sport,
     DateOnly StartDate,

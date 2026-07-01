@@ -2,8 +2,6 @@ using PaceMind.Domain.Enums;
 
 namespace PaceMind.Domain.Training;
 
-/// <summary>Builds the short, deterministic session text. The LLM layer can later replace
-/// this with richer, personalized wording.</summary>
 internal static class WorkoutNarrative
 {
     public static string Describe(WorkoutType type, int minutes) => $"{minutes}-minute {Label(type)} session";

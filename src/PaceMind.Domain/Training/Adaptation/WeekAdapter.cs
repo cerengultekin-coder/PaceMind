@@ -3,11 +3,6 @@ using PaceMind.Domain.Enums;
 
 namespace PaceMind.Domain.Training.Adaptation;
 
-/// <summary>
-/// Rule-based weekly adapter. It summarizes the completed week's feedback, decides a bounded
-/// load change, rescales the upcoming week's sessions accordingly, and leaves an audit trail.
-/// The objective (activity-data) signal will fold into the same summary once GPX upload lands.
-/// </summary>
 public sealed class WeekAdapter : IWeekAdapter
 {
     public AdaptationResult Adapt(

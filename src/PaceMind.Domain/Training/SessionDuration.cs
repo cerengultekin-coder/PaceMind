@@ -1,6 +1,5 @@
 namespace PaceMind.Domain.Training;
 
-/// <summary>Normalizes raw session minutes into athlete-friendly, bounded values.</summary>
 internal static class SessionDuration
 {
     public const int MinMinutes = 20;

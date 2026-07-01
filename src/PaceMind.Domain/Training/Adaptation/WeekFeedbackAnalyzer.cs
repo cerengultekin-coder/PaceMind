@@ -3,7 +3,6 @@ using PaceMind.Domain.Enums;
 
 namespace PaceMind.Domain.Training.Adaptation;
 
-/// <summary>Reduces a completed week's workouts and their feedback to a <see cref="WeekFeedbackSummary"/>.</summary>
 internal static class WeekFeedbackAnalyzer
 {
     public static WeekFeedbackSummary Analyze(TrainingWeek week)

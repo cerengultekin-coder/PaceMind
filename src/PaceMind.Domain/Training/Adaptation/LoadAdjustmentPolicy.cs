@@ -2,14 +2,8 @@ using System.Globalization;
 
 namespace PaceMind.Domain.Training.Adaptation;
 
-/// <summary>The decision the policy reached: how much to scale next week's load, and why.</summary>
 internal readonly record struct LoadAdjustment(double Factor, string TriggerReason, string Summary);
 
-/// <summary>
-/// Turns a week's feedback into a bounded load adjustment. This is the deterministic core of
-/// the adaptation: pain brakes hardest, then "too hard" and missed sessions ease the load,
-/// while consistently easy, well-completed weeks earn a capped increase.
-/// </summary>
 internal static class LoadAdjustmentPolicy
 {
     public static LoadAdjustment Decide(WeekFeedbackSummary summary, AdaptationOptions options)

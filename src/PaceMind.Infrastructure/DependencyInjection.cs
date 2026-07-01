@@ -5,14 +5,8 @@ using PaceMind.Infrastructure.Coaching;
 
 namespace PaceMind.Infrastructure;
 
-/// <summary>Composition root for infrastructure services (external providers).</summary>
 public static class DependencyInjection
 {
-    /// <summary>
-    /// Registers the AI coach. The provider is chosen by <c>Coach:Provider</c>
-    /// (<c>Gemini</c> by default, or <c>Anthropic</c>). Each provider reads its key from
-    /// config or an environment variable and degrades to friendly placeholders when unset.
-    /// </summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var provider = configuration["Coach:Provider"];

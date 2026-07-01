@@ -3,11 +3,6 @@ using PaceMind.Domain.Enums;
 
 namespace PaceMind.Domain.Training.Planning;
 
-/// <summary>
-/// Rule-based plan generator. It lays out the periodized load curve, fits sessions onto the
-/// athlete's available days, and sizes each session from its intensity — all sport-agnostic,
-/// delegating the sport-specific intensity mapping to the resolved <see cref="ISportProfile"/>.
-/// </summary>
 public sealed class PlanGenerator(ISportProfileResolver profileResolver) : IPlanGenerator
 {
     public TrainingPlan Generate(Goal goal, DateOnly startDate, PlanGenerationOptions? options = null)

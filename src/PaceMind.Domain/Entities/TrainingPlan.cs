@@ -2,10 +2,6 @@ using PaceMind.Domain.Enums;
 
 namespace PaceMind.Domain.Entities;
 
-/// <summary>
-/// The living plan for a goal. The near week is concrete; later weeks stay drafts
-/// because they will be rewritten as feedback arrives.
-/// </summary>
 public class TrainingPlan : BaseEntity
 {
     public Guid GoalId { get; set; }

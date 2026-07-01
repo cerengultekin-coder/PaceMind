@@ -5,11 +5,6 @@ using PaceMind.Application.Coaching;
 
 namespace PaceMind.Infrastructure.Coaching;
 
-/// <summary>
-/// Claude-backed coach. It explains and discusses the plan in natural language but never
-/// decides training load — the rule engine owns that. When no API key is configured the
-/// service degrades to friendly placeholders so the app still runs.
-/// </summary>
 public sealed class AnthropicCoachService : ICoachService
 {
     private const string SystemPrompt =

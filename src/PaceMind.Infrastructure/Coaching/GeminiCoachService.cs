@@ -5,11 +5,6 @@ using PaceMind.Application.Coaching;
 
 namespace PaceMind.Infrastructure.Coaching;
 
-/// <summary>
-/// Google Gemini-backed coach, called over the free-tier Generative Language REST API.
-/// Like the Anthropic implementation it explains the plan but never decides training load,
-/// and it degrades to friendly placeholders when no API key is configured.
-/// </summary>
 public sealed class GeminiCoachService : ICoachService
 {
     private const string SystemPrompt =

@@ -5,8 +5,6 @@ using PaceMind.Domain.Training;
 
 namespace PaceMind.Api.Contracts;
 
-/// <summary>Projects a generated <see cref="TrainingPlan"/> into the display contract,
-/// recomputing each session's intensity zone and load from the sport profile.</summary>
 internal static class PlanPreviewMapper
 {
     public static PlanPreviewResponse ToResponse(TrainingPlan plan, Goal goal, DateOnly startDate, ISportProfile profile)

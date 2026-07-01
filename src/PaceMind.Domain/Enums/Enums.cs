@@ -1,12 +1,10 @@
 namespace PaceMind.Domain.Enums;
 
-/// <summary>Sport the goal targets. MVP ships running only; the enum leaves room for more.</summary>
 public enum Sport
 {
     Running = 1,
 }
 
-/// <summary>What kind of target the athlete set. MVP supports distance + time.</summary>
 public enum TargetType
 {
     DistanceTime = 1,
@@ -26,7 +24,6 @@ public enum WeekStatus
     Done = 3,
 }
 
-/// <summary>Type of a single session. The coaching logic balances these across a week.</summary>
 public enum WorkoutType
 {
     Rest = 0,
@@ -49,11 +46,6 @@ public enum FeedbackOutcome
     Skipped = 2,
 }
 
-/// <summary>
-/// Sport-agnostic effort band for a session. Each sport profile maps its own workout
-/// types onto these zones, so training load can be reasoned about uniformly across sports.
-/// Ordered from lightest to hardest.
-/// </summary>
 public enum IntensityZone
 {
     Recovery = 1,
@@ -63,7 +55,6 @@ public enum IntensityZone
     Anaerobic = 5,
 }
 
-/// <summary>How the session felt — the core signal the adapter reacts to.</summary>
 public enum Difficulty
 {
     Easy = 1,
@@ -86,7 +77,6 @@ public enum ChatRole
     Coach = 2,
 }
 
-/// <summary>Where activity metrics came from. MVP only ever uses Manual; Gpx/Fit are v2.</summary>
 public enum ActivitySource
 {
     Manual = 1,

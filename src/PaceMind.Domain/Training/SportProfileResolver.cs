@@ -3,16 +3,10 @@ using PaceMind.Domain.Enums;
 
 namespace PaceMind.Domain.Training;
 
-/// <summary>
-/// Registry-backed resolver. The profile set is fixed at construction and stored in a
-/// <see cref="FrozenDictionary{TKey,TValue}"/> for fast, allocation-free lookups on the
-/// read-heavy planning/adaptation path.
-/// </summary>
 public sealed class SportProfileResolver : ISportProfileResolver
 {
     private readonly FrozenDictionary<Sport, ISportProfile> _profiles;
 
-    /// <summary>Builds the registry, rejecting duplicate profiles for the same sport.</summary>
     public SportProfileResolver(IEnumerable<ISportProfile> profiles)
     {
         ArgumentNullException.ThrowIfNull(profiles);

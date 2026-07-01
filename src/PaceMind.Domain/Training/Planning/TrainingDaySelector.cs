@@ -1,9 +1,5 @@
 namespace PaceMind.Domain.Training.Planning;
 
-/// <summary>
-/// Picks which weekdays carry sessions. Days are chosen by a fixed priority that spreads
-/// work across the week (so hard days are not back-to-back), then returned in calendar order.
-/// </summary>
 internal static class TrainingDaySelector
 {
     private static readonly DayOfWeek[] SpreadPriority =
