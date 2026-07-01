@@ -32,6 +32,24 @@ public sealed class PaceMindApiClient(HttpClient httpClient)
                ?? throw new ApiException("The API returned an empty response.");
     }
 
+    public async Task<CoachReplyResponse> CommentOnWeekAsync(CoachCommentRequest request, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PostAsJsonAsync("api/coach/comment", request, JsonOptions, cancellationToken);
+        await EnsureSuccess(response, "The coach could not respond.", cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<CoachReplyResponse>(JsonOptions, cancellationToken)
+               ?? throw new ApiException("The API returned an empty response.");
+    }
+
+    public async Task<CoachReplyResponse> ChatAsync(CoachChatRequest request, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.PostAsJsonAsync("api/coach/chat", request, JsonOptions, cancellationToken);
+        await EnsureSuccess(response, "The coach could not respond.", cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<CoachReplyResponse>(JsonOptions, cancellationToken)
+               ?? throw new ApiException("The API returned an empty response.");
+    }
+
     private static async Task EnsureSuccess(HttpResponseMessage response, string fallback, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)

@@ -1,17 +1,20 @@
 using System.Text.Json.Serialization;
 using PaceMind.Api.Contracts;
 using PaceMind.Application;
+using PaceMind.Application.Coaching;
 using PaceMind.Contracts;
 using PaceMind.Domain.Entities;
 using PaceMind.Domain.Enums;
 using PaceMind.Domain.Training;
 using PaceMind.Domain.Training.Adaptation;
 using PaceMind.Domain.Training.Planning;
+using PaceMind.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddTrainingEngine();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -92,6 +95,37 @@ app.MapPost("/api/plan/adapt", (
     }
 })
 .WithName("AdaptPlan");
+
+app.MapPost("/api/coach/comment", async (CoachCommentRequest request, ICoachService coach) =>
+{
+    var sessions = request.Week.Workouts
+        .Where(workout => workout.Type != nameof(WorkoutType.Rest))
+        .Select(workout => new CoachSession(workout.DayOfWeek.ToString(), workout.Type, workout.DurationMinutes, workout.IntensityZone))
+        .ToList();
+
+    var context = new CoachWeekContext(
+        request.Sport,
+        request.Week.WeekNumber,
+        request.Week.IsDraft,
+        request.Week.TotalLoad,
+        request.GoalSummary,
+        sessions);
+
+    var reply = await coach.CommentOnWeekAsync(context);
+    return Results.Ok(new CoachReplyResponse(reply, coach.IsConfigured));
+})
+.WithName("CoachComment");
+
+app.MapPost("/api/coach/chat", async (CoachChatRequest request, ICoachService coach) =>
+{
+    var history = request.History
+        .Select(turn => new CoachChatTurn(turn.FromCoach, turn.Content))
+        .ToList();
+
+    var reply = await coach.ChatAsync(request.GoalSummary, history);
+    return Results.Ok(new CoachReplyResponse(reply, coach.IsConfigured));
+})
+.WithName("CoachChat");
 
 app.MapFallbackToFile("index.html");
 

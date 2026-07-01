@@ -1,4 +1,6 @@
 @page "/coach"
+@inject PaceMindApiClient Api
+@inject PlanState PlanState
 
 <PageTitle>PaceMind — Coach</PageTitle>
 
@@ -12,54 +14,79 @@
         @foreach (var message in _messages)
         {
             <div class="flex @(message.FromCoach ? "justify-start" : "justify-end")">
-                <div class="max-w-md rounded-2xl px-4 py-2.5 text-sm @(message.FromCoach
+                <div class="max-w-md whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm @(message.FromCoach
                         ? "bg-slate-800 text-slate-100"
                         : "bg-brand-500 text-slate-950")">
-                    @message.Text
+                    @message.Content
                 </div>
+            </div>
+        }
+        @if (_busy)
+        {
+            <div class="flex justify-start">
+                <div class="rounded-2xl bg-slate-800 px-4 py-2.5 text-sm text-slate-400">…</div>
             </div>
         }
     </div>
 
     <div class="border-t border-slate-800 p-4">
         <div class="flex items-center gap-3">
-            <input type="text" @bind="_draft" @bind:event="oninput" @onkeydown="OnKeyDown"
+            <input type="text" @bind="_draft" @bind:event="oninput" @onkeydown="OnKeyDown" disabled="@_busy"
                    placeholder="Why is this week so light?"
-                   class="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-brand-500" />
-            <button @onclick="Send" disabled="@string.IsNullOrWhiteSpace(_draft)"
+                   class="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm outline-none focus:border-brand-500 disabled:opacity-60" />
+            <button @onclick="SendAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_draft))"
                     class="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400 disabled:opacity-50">
                 Send
             </button>
         </div>
-        <p class="mt-2 text-xs text-slate-500">Live coaching replies arrive with the AI integration — this is a preview.</p>
     </div>
 </div>
 
 @code {
-    private readonly List<ChatLine> _messages =
+    private readonly List<CoachChatTurnDto> _messages =
     [
         new(true, "Hi! I'm your coach. Ask me anything about your plan."),
-        new(false, "Why is week 4 lighter?"),
-        new(true, "Week 4 is a recovery week — easing the load lets your body absorb the previous build before we ramp again."),
     ];
 
     private string _draft = string.Empty;
+    private bool _busy;
 
-    private void Send()
+    private async Task SendAsync()
     {
-        if (string.IsNullOrWhiteSpace(_draft))
+        if (_busy || string.IsNullOrWhiteSpace(_draft))
             return;
 
-        _messages.Add(new ChatLine(false, _draft.Trim()));
-        _messages.Add(new ChatLine(true, "Got it — live answers are coming with the AI coach. For now your message is noted."));
+        _messages.Add(new CoachChatTurnDto(false, _draft.Trim()));
         _draft = string.Empty;
+        _busy = true;
+
+        try
+        {
+            var response = await Api.ChatAsync(new CoachChatRequest(GoalSummary(), _messages));
+            _messages.Add(new CoachChatTurnDto(true, response.Reply));
+        }
+        catch (ApiException ex)
+        {
+            _messages.Add(new CoachChatTurnDto(true, ex.Message));
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
-    private void OnKeyDown(KeyboardEventArgs e)
+    private async Task OnKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
-            Send();
+            await SendAsync();
     }
 
-    private sealed record ChatLine(bool FromCoach, string Text);
+    private string GoalSummary()
+    {
+        var request = PlanState.LastRequest;
+        if (request is null)
+            return "general endurance fitness (no plan set yet)";
+
+        return $"{request.TargetDistanceKm:0.#}K in {request.TargetTimeMinutes} minutes by {request.TargetDate:dd MMM yyyy}";
+    }
 }

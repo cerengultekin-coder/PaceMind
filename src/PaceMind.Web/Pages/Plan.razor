@@ -24,8 +24,11 @@
         <StatCard Label="Goal date" Value="@plan.TargetDate.ToString("dd MMM")" Hint="@plan.TargetDate.ToString("yyyy")" />
     </div>
 
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
-        <PlanCalendar Plan="plan" />
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @foreach (var week in plan.Weeks)
+        {
+            <WeekCard Week="week" Sport="@plan.Sport.ToString()" GoalSummary="@GoalSummary()" />
+        }
     </div>
 }
 else
@@ -43,5 +46,15 @@ else
 
 @code {
     protected override void OnInitialized() => PlanState.Changed += StateHasChanged;
+
+    private string GoalSummary()
+    {
+        var request = PlanState.LastRequest;
+        if (request is null)
+            return PlanState.Plan?.Sport.ToString() ?? "general fitness";
+
+        return $"{request.TargetDistanceKm:0.#}K in {request.TargetTimeMinutes} minutes by {request.TargetDate:dd MMM yyyy}";
+    }
+
     public void Dispose() => PlanState.Changed -= StateHasChanged;
 }
