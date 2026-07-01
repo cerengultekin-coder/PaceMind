@@ -10,5 +10,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddScoped<PaceMindApiClient>();
 builder.Services.AddSingleton<PlanState>();
+builder.Services.AddSingleton<ActivityLog>();
 
 await builder.Build().RunAsync();

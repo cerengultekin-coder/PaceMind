@@ -1,0 +1,89 @@
+@page "/"
+@implements IDisposable
+@inject ActivityLog ActivityLog
+@inject PlanState PlanState
+@inject NavigationManager Navigation
+
+<PageTitle>PaceMind — Dashboard</PageTitle>
+
+<div class="overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-brand-500/20 via-slate-900/40 to-transparent p-8">
+    <div class="text-sm font-medium text-brand-300">Your training log</div>
+    <h1 class="mt-1 text-3xl font-bold tracking-tight">Everything you do, in one place.</h1>
+    <p class="mt-2 max-w-xl text-slate-300">Log each session as you finish it. Your coach reads this to shape the weeks ahead.</p>
+    <button @onclick="@(() => Navigation.NavigateTo("program"))"
+            class="mt-6 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400">
+        Open program
+    </button>
+</div>
+
+<div class="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <StatCard Label="Sessions logged" Value="@ActivityLog.Entries.Count.ToString()" />
+    <StatCard Label="This week" Value="@ThisWeekCount().ToString()" ValueClass="text-brand-300" />
+    <StatCard Label="Goal" Value="@GoalValue()" Hint="@GoalHint()" />
+    <StatCard Label="Program" Value="@(PlanState.HasPlan ? $"{PlanState.Plan!.TotalWeeks} wk" : "—")" />
+</div>
+
+<div class="mt-6">
+    <h2 class="mb-3 text-lg font-semibold">Activity</h2>
+
+    @if (ActivityLog.Entries.Count == 0)
+    {
+        <div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-16 text-center">
+            <h3 class="font-semibold">No activity yet</h3>
+            <p class="mt-1 max-w-sm text-sm text-slate-400">Generate a program, open a week, and log how each session went. It'll show up here.</p>
+            <button @onclick="@(() => Navigation.NavigateTo("program"))"
+                    class="mt-6 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400">
+                Set your goal
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-2">
+            @foreach (var entry in ActivityLog.Entries)
+            {
+                <div class="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                    <div class="w-24 shrink-0 text-xs text-slate-500">@entry.LoggedAt.ToString("dd MMM HH:mm")</div>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm font-medium">@entry.Type<span class="text-slate-500"> · @entry.Sport</span></div>
+                        <div class="text-xs text-slate-400">@(entry.DurationMinutes is { } m ? $"{m} min" : "—")</div>
+                    </div>
+                    <span class="rounded-full px-2.5 py-0.5 text-xs @FeelingClass(entry.Feeling)">@entry.Feeling</span>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ActivityLog.Changed += StateHasChanged;
+        PlanState.Changed += StateHasChanged;
+    }
+
+    private int ThisWeekCount()
+    {
+        var since = DateTimeOffset.Now.AddDays(-7);
+        return ActivityLog.Entries.Count(entry => entry.LoggedAt >= since);
+    }
+
+    private string GoalValue() => PlanState.LastRequest is { } r ? $"{r.TargetDistanceKm:0.#}K" : "—";
+
+    private string? GoalHint() => PlanState.LastRequest is { } r ? $"{r.TargetTimeMinutes} min · {r.TargetDate:dd MMM}" : null;
+
+    private static string FeelingClass(string feeling) => feeling switch
+    {
+        "Easy" => "bg-emerald-500/15 text-emerald-300",
+        "Just right" => "bg-brand-500/15 text-brand-300",
+        "Too hard" => "bg-amber-500/15 text-amber-300",
+        "Pain" => "bg-red-500/15 text-red-300",
+        _ => "bg-slate-800 text-slate-400",
+    };
+
+    public void Dispose()
+    {
+        ActivityLog.Changed -= StateHasChanged;
+        PlanState.Changed -= StateHasChanged;
+    }
+}

@@ -1,0 +1,174 @@
+@page "/program"
+@implements IDisposable
+@inject PaceMindApiClient Api
+@inject PlanState PlanState
+
+<PageTitle>PaceMind — Program</PageTitle>
+
+<div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight">Your program</h1>
+    <p class="mt-1 text-slate-400">Set a goal and we'll build a periodized weekly plan you can follow and adapt.</p>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+    <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+        <div class="grid gap-4">
+            <div>
+                <label class="mb-1.5 block text-sm text-slate-300">Target distance (km)</label>
+                <input type="number" step="0.1" min="1" @bind="_form.TargetDistanceKm" class="@FieldClass" />
+            </div>
+            <div>
+                <label class="mb-1.5 block text-sm text-slate-300">Target time (minutes)</label>
+                <input type="number" min="1" @bind="_form.TargetTimeMinutes" class="@FieldClass" />
+            </div>
+            <div>
+                <label class="mb-1.5 block text-sm text-slate-300">Target date</label>
+                <input type="date" @bind="_form.TargetDate" class="@FieldClass" />
+            </div>
+            <div>
+                <label class="mb-1.5 block text-sm text-slate-300">Max training days / week</label>
+                <input type="number" min="1" max="7" @bind="_form.DaysPerWeekMax" class="@FieldClass" />
+            </div>
+            <div>
+                <label class="mb-1.5 block text-sm text-slate-300">Blackout days</label>
+                <div class="flex flex-wrap gap-2">
+                    @foreach (var day in Days)
+                    {
+                        var active = _form.BlackoutDays.Contains(day);
+                        <button type="button" @onclick="() => ToggleDay(day)"
+                                class="rounded-lg border px-3 py-1.5 text-sm transition @(active
+                                    ? "border-brand-500 bg-brand-500/15 text-brand-200"
+                                    : "border-slate-700 text-slate-300 hover:border-slate-600")">
+                            @day.ToString()[..3]
+                        </button>
+                    }
+                </div>
+            </div>
+            <div>
+                <label class="mb-1.5 block text-sm text-slate-300">Baseline note</label>
+                <input type="text" @bind="_form.BaselineNote" placeholder="Runs 2-3x/week, longest 5K" class="@FieldClass" />
+            </div>
+        </div>
+
+        @if (_error is not null)
+        {
+            <div class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">@_error</div>
+        }
+
+        <button @onclick="GenerateAsync" disabled="@_busy"
+                class="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400 disabled:opacity-60">
+            @if (_busy)
+            {
+                <span class="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/40 border-t-slate-950"></span>
+                <span>Generating…</span>
+            }
+            else
+            {
+                <span>Generate program</span>
+            }
+        </button>
+    </div>
+
+    <div class="lg:col-span-2">
+        @if (PlanState is { HasPlan: true, Plan: { } plan })
+        {
+            var peak = plan.Weeks.Count == 0 ? 0d : plan.Weeks.Max(week => week.TotalLoad);
+
+            <div class="mb-4 grid grid-cols-3 gap-3">
+                <StatCard Label="Weeks" Value="@plan.TotalWeeks.ToString()" />
+                <StatCard Label="Peak load" Value="@peak.ToString()" ValueClass="text-brand-300" />
+                <StatCard Label="Goal date" Value="@plan.TargetDate.ToString("dd MMM")" Hint="@plan.TargetDate.ToString("yyyy")" />
+            </div>
+
+            <div class="space-y-2">
+                @for (var i = 0; i < plan.Weeks.Count; i++)
+                {
+                    var index = i;
+                    <WeekRow Week="plan.Weeks[index]"
+                             Sport="@plan.Sport.ToString()"
+                             GoalSummary="@GoalSummary()"
+                             MaxLoad="peak"
+                             IsOpen="_openIndex == index"
+                             OnToggle="() => Toggle(index)" />
+                }
+            </div>
+        }
+        else
+        {
+            <div class="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-20 text-center">
+                <h2 class="text-lg font-semibold">No program yet</h2>
+                <p class="mt-1 max-w-sm text-sm text-slate-400">Fill in your goal and generate a plan. Weeks appear here; open one to see the sessions and log how they went.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private static readonly DayOfWeek[] Days =
+    [
+        DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday,
+        DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday,
+    ];
+
+    private const string FieldClass =
+        "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-brand-500";
+
+    private readonly FormModel _form = new();
+    private int _openIndex;
+    private bool _busy;
+    private string? _error;
+
+    protected override void OnInitialized() => PlanState.Changed += StateHasChanged;
+
+    private void ToggleDay(DayOfWeek day)
+    {
+        if (!_form.BlackoutDays.Remove(day))
+            _form.BlackoutDays.Add(day);
+    }
+
+    private void Toggle(int index) => _openIndex = _openIndex == index ? -1 : index;
+
+    private async Task GenerateAsync()
+    {
+        _busy = true;
+        _error = null;
+
+        var request = new PlanPreviewRequest(
+            _form.TargetDistanceKm,
+            _form.TargetTimeMinutes,
+            DateOnly.FromDateTime(_form.TargetDate),
+            _form.DaysPerWeekMax,
+            [.. _form.BlackoutDays],
+            _form.BaselineNote);
+
+        try
+        {
+            var plan = await Api.PreviewPlanAsync(request);
+            PlanState.Set(request, plan);
+            _openIndex = 0;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string GoalSummary() =>
+        $"{_form.TargetDistanceKm:0.#}K in {_form.TargetTimeMinutes} minutes by {DateOnly.FromDateTime(_form.TargetDate):dd MMM yyyy}";
+
+    public void Dispose() => PlanState.Changed -= StateHasChanged;
+
+    private sealed class FormModel
+    {
+        public double TargetDistanceKm { get; set; } = 10;
+        public int TargetTimeMinutes { get; set; } = 50;
+        public DateTime TargetDate { get; set; } = DateTime.Today.AddDays(84);
+        public int DaysPerWeekMax { get; set; } = 4;
+        public HashSet<DayOfWeek> BlackoutDays { get; } = [];
+        public string BaselineNote { get; set; } = "Runs 2-3x/week, longest 5K";
+    }
+}

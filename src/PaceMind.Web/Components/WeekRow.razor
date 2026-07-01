@@ -1,4 +1,5 @@
 @inject PaceMindApiClient Api
+@inject ActivityLog ActivityLog
 
 <div class="overflow-hidden rounded-xl border transition @(IsOpen ? "border-brand-500/40 bg-slate-900/60" : "border-slate-800 bg-slate-900/30 hover:border-slate-700")">
     <button type="button" @onclick="OnToggle" class="flex w-full items-center gap-4 p-4 text-left">
@@ -37,13 +38,30 @@
     @if (IsOpen)
     {
         <div class="border-t border-slate-800 p-4">
-            <div class="grid gap-x-6 gap-y-1 sm:grid-cols-2">
-                @foreach (var workout in Week.Workouts)
+            <div class="space-y-2">
+                @foreach (var workout in Week.Workouts.Where(w => w.DurationMinutes is not null))
                 {
-                    <div class="flex items-center justify-between border-b border-slate-800/60 py-1.5 text-sm last:border-0">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800/60 pb-2 last:border-0">
                         <span class="w-10 text-xs uppercase text-slate-500">@workout.DayOfWeek.ToString()[..3]</span>
-                        <span class="flex-1 @TypeColor(workout.Type)">@workout.Type</span>
-                        <span class="text-xs text-slate-400">@(workout.DurationMinutes is { } m ? $"{m} min" : "rest")</span>
+                        <span class="@TypeColor(workout.Type)">@workout.Type</span>
+                        <span class="text-xs text-slate-400">@workout.DurationMinutes min</span>
+
+                        @if (_logged.TryGetValue(workout.Date, out var feeling))
+                        {
+                            <span class="ml-auto text-xs text-emerald-300">logged · @feeling</span>
+                        }
+                        else
+                        {
+                            <div class="ml-auto flex flex-wrap gap-1">
+                                @foreach (var option in Feelings)
+                                {
+                                    <button type="button" @onclick="() => Log(workout, option.Feeling)"
+                                            class="rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-300 transition hover:border-brand-500 hover:text-brand-200">
+                                        @option.Label
+                                    </button>
+                                }
+                            </div>
+                        }
                     </div>
                 }
             </div>
@@ -53,7 +71,7 @@
                 <div class="mt-4 rounded-lg border border-brand-500/30 bg-brand-500/10 p-3 text-sm text-slate-200">@_comment</div>
             }
 
-            <div class="mt-4 flex items-center gap-3">
+            <div class="mt-4">
                 <button @onclick="AskAiAsync" disabled="@_loading"
                         class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-brand-400 disabled:opacity-60">
                     @if (_loading)
@@ -66,7 +84,6 @@
                         <span>Ask AI about this week</span>
                     }
                 </button>
-                <a href="feedback" class="text-sm text-slate-400 hover:text-slate-200">Give feedback</a>
             </div>
         </div>
     }
@@ -80,10 +97,27 @@
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback OnToggle { get; set; }
 
+    private static readonly (string Label, string Feeling)[] Feelings =
+    [
+        ("Easy", "Easy"),
+        ("OK", "Just right"),
+        ("Hard", "Too hard"),
+        ("Pain", "Pain"),
+        ("Skip", "Skipped"),
+    ];
+
+    private readonly Dictionary<DateOnly, string> _logged = [];
     private bool _loading;
     private string? _comment;
 
     private int BarWidth => MaxLoad <= 0 ? 0 : (int)Math.Round(Week.TotalLoad / MaxLoad * 100);
+
+    private void Log(PlanWorkoutDto workout, string feeling)
+    {
+        _logged[workout.Date] = feeling;
+        ActivityLog.Add(new ActivityEntry(
+            DateTimeOffset.Now, Sport, workout.DayOfWeek, workout.Type, workout.DurationMinutes, feeling));
+    }
 
     private async Task AskAiAsync()
     {
