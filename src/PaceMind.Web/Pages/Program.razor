@@ -76,8 +76,8 @@
             <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
                 <div class="flex items-start justify-between">
                     <div>
-                        <div class="text-sm font-medium text-brand-300">Week @week.WeekNumber of @PlanState.TotalWeeks</div>
-                        <div class="mt-0.5 text-xs text-slate-500">Week of @week.StartDate.ToString("dd MMM yyyy") · load @week.TotalLoad</div>
+                        <div class="text-lg font-semibold text-brand-300">Week @week.WeekNumber</div>
+                        <div class="mt-0.5 text-xs text-slate-500">Week of @week.StartDate.ToString("dd MMM yyyy")</div>
                     </div>
                     @if (week.WeekNumber >= PlanState.TotalWeeks)
                     {
@@ -99,18 +99,19 @@
                 <div class="mt-5 space-y-2">
                     @foreach (var workout in week.Workouts.Where(w => w.DurationMinutes is not null))
                     {
-                        <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-slate-800 bg-slate-950 p-3">
-                            <span class="w-10 text-xs uppercase text-slate-500">@workout.DayOfWeek.ToString()[..3]</span>
-                            <span class="@TypeColor(workout.Type)">@workout.Type</span>
-                            <span class="text-xs text-slate-400">@workout.DurationMinutes min</span>
-
+                        <div class="flex items-center gap-4 rounded-lg border border-slate-800 bg-slate-950 p-3">
+                            <div class="w-12 shrink-0 text-xs font-semibold uppercase text-slate-500">@workout.DayOfWeek.ToString()[..3]</div>
+                            <div class="min-w-0 flex-1">
+                                <div class="font-medium @TypeColor(workout.Type)">@workout.Type</div>
+                                <div class="text-xs text-slate-400">@workout.Description</div>
+                            </div>
                             @if (_feelings.TryGetValue(workout.Date, out var feeling))
                             {
-                                <span class="ml-auto text-xs text-emerald-300">logged · @feeling</span>
+                                <span class="shrink-0 text-xs text-emerald-300">logged · @feeling</span>
                             }
                             else
                             {
-                                <div class="ml-auto flex flex-wrap gap-1">
+                                <div class="flex shrink-0 flex-wrap justify-end gap-1">
                                     @foreach (var option in Feelings)
                                     {
                                         <button type="button" @onclick="() => Log(workout, option.Feeling)"
