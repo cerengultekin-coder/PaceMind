@@ -1,0 +1,114 @@
+@inject PaceMindApiClient Api
+
+<div class="overflow-hidden rounded-xl border transition @(IsOpen ? "border-brand-500/40 bg-slate-900/60" : "border-slate-800 bg-slate-900/30 hover:border-slate-700")">
+    <button type="button" @onclick="OnToggle" class="flex w-full items-center gap-4 p-4 text-left">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold @(Week.IsDraft ? "border-slate-700 text-slate-400" : "border-brand-500/50 text-brand-300")">
+            @Week.WeekNumber
+        </div>
+
+        <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium">Week @Week.WeekNumber</span>
+                @if (Week.IsDraft)
+                {
+                    <span class="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] text-slate-400">draft</span>
+                }
+                else
+                {
+                    <span class="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-300">@Week.Status</span>
+                }
+            </div>
+            <div class="mt-0.5 text-xs text-slate-500">@Week.StartDate.ToString("dd MMM yyyy")</div>
+        </div>
+
+        <div class="hidden w-40 shrink-0 sm:block">
+            <div class="h-1.5 rounded-full bg-slate-800">
+                <div class="h-1.5 rounded-full bg-brand-500" style="width:@BarWidth%"></div>
+            </div>
+            <div class="mt-1 text-right text-[11px] text-slate-500">load @Week.TotalLoad</div>
+        </div>
+
+        <svg class="h-4 w-4 shrink-0 text-slate-500 transition-transform @(IsOpen ? "rotate-180" : "")"
+             viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M6 8l4 4 4-4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+    </button>
+
+    @if (IsOpen)
+    {
+        <div class="border-t border-slate-800 p-4">
+            <div class="grid gap-x-6 gap-y-1 sm:grid-cols-2">
+                @foreach (var workout in Week.Workouts)
+                {
+                    <div class="flex items-center justify-between border-b border-slate-800/60 py-1.5 text-sm last:border-0">
+                        <span class="w-10 text-xs uppercase text-slate-500">@workout.DayOfWeek.ToString()[..3]</span>
+                        <span class="flex-1 @TypeColor(workout.Type)">@workout.Type</span>
+                        <span class="text-xs text-slate-400">@(workout.DurationMinutes is { } m ? $"{m} min" : "rest")</span>
+                    </div>
+                }
+            </div>
+
+            @if (_comment is not null)
+            {
+                <div class="mt-4 rounded-lg border border-brand-500/30 bg-brand-500/10 p-3 text-sm text-slate-200">@_comment</div>
+            }
+
+            <div class="mt-4 flex items-center gap-3">
+                <button @onclick="AskAiAsync" disabled="@_loading"
+                        class="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-brand-400 disabled:opacity-60">
+                    @if (_loading)
+                    {
+                        <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-950/40 border-t-slate-950"></span>
+                        <span>Thinking…</span>
+                    }
+                    else
+                    {
+                        <span>Ask AI about this week</span>
+                    }
+                </button>
+                <a href="feedback" class="text-sm text-slate-400 hover:text-slate-200">Give feedback</a>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public PlanWeekDto Week { get; set; } = default!;
+    [Parameter, EditorRequired] public string Sport { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string GoalSummary { get; set; } = string.Empty;
+    [Parameter] public double MaxLoad { get; set; } = 1;
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnToggle { get; set; }
+
+    private bool _loading;
+    private string? _comment;
+
+    private int BarWidth => MaxLoad <= 0 ? 0 : (int)Math.Round(Week.TotalLoad / MaxLoad * 100);
+
+    private async Task AskAiAsync()
+    {
+        _loading = true;
+        try
+        {
+            var response = await Api.CommentOnWeekAsync(new CoachCommentRequest(Sport, GoalSummary, Week));
+            _comment = response.Reply;
+        }
+        catch (ApiException ex)
+        {
+            _comment = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string TypeColor(string type) => type switch
+    {
+        "Easy" => "text-easy",
+        "Long" => "text-long",
+        "Tempo" => "text-tempo",
+        "Interval" => "text-interval",
+        _ => "text-slate-400",
+    };
+}

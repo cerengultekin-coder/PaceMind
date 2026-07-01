@@ -7,7 +7,7 @@
 
 @if (PlanState is { HasPlan: true, Plan: { } plan })
 {
-    var peak = plan.Weeks.Count == 0 ? 0 : plan.Weeks.Max(w => w.TotalLoad);
+    var peak = plan.Weeks.Count == 0 ? 0d : plan.Weeks.Max(week => week.TotalLoad);
 
     <div class="mb-6 flex items-end justify-between">
         <div>
@@ -17,17 +17,23 @@
         <a href="onboarding" class="text-sm text-brand-300 hover:text-brand-200">Edit goal</a>
     </div>
 
-    <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div class="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard Label="Sport" Value="@plan.Sport.ToString()" />
         <StatCard Label="Weeks" Value="@plan.TotalWeeks.ToString()" />
         <StatCard Label="Peak week load" Value="@peak.ToString()" ValueClass="text-brand-300" />
         <StatCard Label="Goal date" Value="@plan.TargetDate.ToString("dd MMM")" Hint="@plan.TargetDate.ToString("yyyy")" />
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        @foreach (var week in plan.Weeks)
+    <div class="space-y-2">
+        @for (var i = 0; i < plan.Weeks.Count; i++)
         {
-            <WeekCard Week="week" Sport="@plan.Sport.ToString()" GoalSummary="@GoalSummary()" />
+            var index = i;
+            <WeekRow Week="plan.Weeks[index]"
+                     Sport="@plan.Sport.ToString()"
+                     GoalSummary="@GoalSummary()"
+                     MaxLoad="peak"
+                     IsOpen="_openIndex == index"
+                     OnToggle="() => Toggle(index)" />
         }
     </div>
 }
@@ -38,13 +44,17 @@ else
         <p class="mt-1 max-w-sm text-sm text-slate-400">Set your goal and we'll generate a periodized plan you can follow and adapt.</p>
         <button @onclick="@(() => Navigation.NavigateTo("onboarding"))"
                 class="mt-6 rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-brand-400">
-            Set your goal →
+            Set your goal
         </button>
     </div>
 }
 
 @code {
+    private int _openIndex;
+
     protected override void OnInitialized() => PlanState.Changed += StateHasChanged;
+
+    private void Toggle(int index) => _openIndex = _openIndex == index ? -1 : index;
 
     private string GoalSummary()
     {
