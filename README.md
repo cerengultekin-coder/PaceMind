@@ -47,6 +47,22 @@ dotnet run --project src/PaceMind.Api
 
 Then open the app at the URL printed in the console (e.g. `http://localhost:5297`).
 
+### AI coach (optional, free)
+
+The AI coach uses **Google Gemini** (free tier). Without a key the app still runs — the
+coach just shows friendly placeholders. To enable it, get a free key from
+[Google AI Studio](https://aistudio.google.com/apikey) and set it before running:
+
+```bash
+# PowerShell
+$env:GEMINI_API_KEY = "your-key"
+# bash
+export GEMINI_API_KEY="your-key"
+```
+
+The provider and model are configurable in `appsettings.json` (`Coach:Provider`,
+`Gemini:Model`); an Anthropic/Claude backend is also available (`Coach:Provider: "Anthropic"`).
+
 ## Status
 
 Early stage. The plan generator and the full UI are working end to end. Next up: the weekly
