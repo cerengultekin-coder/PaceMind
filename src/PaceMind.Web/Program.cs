@@ -11,5 +11,6 @@ builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.H
 builder.Services.AddScoped<PaceMindApiClient>();
 builder.Services.AddSingleton<PlanState>();
 builder.Services.AddSingleton<ActivityLog>();
+builder.Services.AddScoped<ThemeService>();
 
 await builder.Build().RunAsync();

@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(\"cleared\")"
+      "PowerShell(\"cleared\")",
+      "Bash(curl -s -o /dev/null -w \"css=%{http_code}\\\\n\" http://localhost:5297/css/app.css)"
     ]
   }
 }

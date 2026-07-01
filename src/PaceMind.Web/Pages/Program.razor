@@ -8,30 +8,30 @@
 
 <div class="mb-6">
     <h1 class="text-2xl font-bold tracking-tight">Your program</h1>
-    <p class="mt-1 text-slate-400">One week at a time. Finish the week, log how it went, then start the next — it adapts to you.</p>
+    <p class="mt-1 text-muted">One week at a time. Finish the week, log how it went, then start the next — it adapts to you.</p>
 </div>
 
 <div class="grid gap-6 lg:grid-cols-3">
-    <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+    <div class="rounded-2xl border border-border bg-surface/60 p-6">
         <div class="grid gap-4">
             <div>
-                <label class="mb-1.5 block text-sm text-slate-300">Target distance (km)</label>
+                <label class="mb-1.5 block text-sm text-fg">Target distance (km)</label>
                 <input type="number" step="0.1" min="1" @bind="_form.TargetDistanceKm" class="@FieldClass" />
             </div>
             <div>
-                <label class="mb-1.5 block text-sm text-slate-300">Target time (minutes)</label>
+                <label class="mb-1.5 block text-sm text-fg">Target time (minutes)</label>
                 <input type="number" min="1" @bind="_form.TargetTimeMinutes" class="@FieldClass" />
             </div>
             <div>
-                <label class="mb-1.5 block text-sm text-slate-300">Target date</label>
+                <label class="mb-1.5 block text-sm text-fg">Target date</label>
                 <input type="date" @bind="_form.TargetDate" class="@FieldClass" />
             </div>
             <div>
-                <label class="mb-1.5 block text-sm text-slate-300">Max training days / week</label>
+                <label class="mb-1.5 block text-sm text-fg">Max training days / week</label>
                 <input type="number" min="1" max="7" @bind="_form.DaysPerWeekMax" class="@FieldClass" />
             </div>
             <div>
-                <label class="mb-1.5 block text-sm text-slate-300">Blackout days</label>
+                <label class="mb-1.5 block text-sm text-fg">Blackout days</label>
                 <div class="flex flex-wrap gap-2">
                     @foreach (var day in Days)
                     {
@@ -39,14 +39,14 @@
                         <button type="button" @onclick="() => ToggleDay(day)"
                                 class="rounded-lg border px-3 py-1.5 text-sm transition @(active
                                     ? "border-brand-500 bg-brand-500/15 text-brand-200"
-                                    : "border-slate-700 text-slate-300 hover:border-slate-600")">
+                                    : "border-border text-fg hover:border-brand-500/40")">
                             @day.ToString()[..3]
                         </button>
                     }
                 </div>
             </div>
             <div>
-                <label class="mb-1.5 block text-sm text-slate-300">Baseline note</label>
+                <label class="mb-1.5 block text-sm text-fg">Baseline note</label>
                 <input type="text" @bind="_form.BaselineNote" placeholder="Runs 2-3x/week, longest 5K" class="@FieldClass" />
             </div>
         </div>
@@ -73,11 +73,11 @@
     <div class="lg:col-span-2">
         @if (PlanState is { HasProgram: true, CurrentWeek: { } week, Goal: not null })
         {
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+            <div class="rounded-2xl border border-border bg-surface/60 p-6">
                 <div class="flex items-start justify-between">
                     <div>
                         <div class="text-lg font-semibold text-brand-300">Week @week.WeekNumber</div>
-                        <div class="mt-0.5 text-xs text-slate-500">Week of @week.StartDate.ToString("dd MMM yyyy")</div>
+                        <div class="mt-0.5 text-xs text-muted">Week of @week.StartDate.ToString("dd MMM yyyy")</div>
                     </div>
                     @if (week.WeekNumber >= PlanState.TotalWeeks)
                     {
@@ -99,11 +99,11 @@
                 <div class="mt-5 space-y-2">
                     @foreach (var workout in week.Workouts.Where(w => w.DurationMinutes is not null))
                     {
-                        <div class="flex items-center gap-4 rounded-lg border border-slate-800 bg-slate-950 p-3">
-                            <div class="w-12 shrink-0 text-xs font-semibold uppercase text-slate-500">@workout.DayOfWeek.ToString()[..3]</div>
+                        <div class="flex items-center gap-4 rounded-lg border border-border bg-surface-2 p-3">
+                            <div class="w-12 shrink-0 text-xs font-semibold uppercase text-muted">@workout.DayOfWeek.ToString()[..3]</div>
                             <div class="min-w-0 flex-1">
                                 <div class="font-medium @TypeColor(workout.Type)">@workout.Type</div>
-                                <div class="text-xs text-slate-400">@workout.Description</div>
+                                <div class="text-xs text-muted">@workout.Description</div>
                             </div>
                             @if (_feelings.TryGetValue(workout.Date, out var feeling))
                             {
@@ -115,7 +115,7 @@
                                     @foreach (var option in Feelings)
                                     {
                                         <button type="button" @onclick="() => Log(workout, option.Feeling)"
-                                                class="rounded-md border border-slate-700 px-2 py-1 text-[11px] text-slate-300 transition hover:border-brand-500 hover:text-brand-200">
+                                                class="rounded-md border border-border px-2 py-1 text-[11px] text-fg transition hover:border-brand-500 hover:text-brand-200">
                                             @option.Label
                                         </button>
                                     }
@@ -125,7 +125,7 @@
                     }
                 </div>
 
-                <div class="mt-6 border-t border-slate-800 pt-5">
+                <div class="mt-6 border-t border-border pt-5">
                     @if (week.WeekNumber < PlanState.TotalWeeks)
                     {
                         <div class="flex items-center gap-3">
@@ -141,7 +141,7 @@
                                     <span>Finish week &amp; start week @(week.WeekNumber + 1)</span>
                                 }
                             </button>
-                            <span class="text-xs text-slate-500">@_feelings.Count logged</span>
+                            <span class="text-xs text-muted">@_feelings.Count logged</span>
                         </div>
                     }
                     else
@@ -153,9 +153,9 @@
         }
         else
         {
-            <div class="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 px-6 py-20 text-center">
+            <div class="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface/40 px-6 py-20 text-center">
                 <h2 class="text-lg font-semibold">No program yet</h2>
-                <p class="mt-1 max-w-sm text-sm text-slate-400">Fill in your goal and generate week 1. You'll get just this week's sessions; finish it, then start the next.</p>
+                <p class="mt-1 max-w-sm text-sm text-muted">Fill in your goal and generate week 1. You'll get just this week's sessions; finish it, then start the next.</p>
             </div>
         }
     </div>
@@ -178,7 +178,7 @@
     ];
 
     private const string FieldClass =
-        "w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-brand-500";
+        "w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg outline-none focus:border-brand-500";
 
     private readonly FormModel _form = new();
     private readonly Dictionary<DateOnly, string> _feelings = [];
@@ -282,7 +282,7 @@
         "Long" => "text-long",
         "Tempo" => "text-tempo",
         "Interval" => "text-interval",
-        _ => "text-slate-400",
+        _ => "text-muted",
     };
 
     public void Dispose() => PlanState.Changed -= StateHasChanged;
